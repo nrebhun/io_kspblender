@@ -60,7 +60,7 @@ class kspcraft:
             return len(self.partslist)
         except TypeError:
             return 0
-    
+
     def parse_file(self):
         """read in the plaintext .craft file"""
         fileobj = open(self.filename,'r',encoding='utf-8')
@@ -87,7 +87,7 @@ class kspcraft:
                 startindices.append(i)
             if self.lines[i]=="}":
                 endindices.append(i)
-               
+
         for i in range(len(startindices)):
             self.partslist.append(part(self.lines[startindices[i]:endindices[i]]))
 
@@ -174,7 +174,14 @@ class part:
             if line.split()[0] == "modMass":
                 self.modMass = float(line.split()[2])                           #"modMass = 0" -> _______________? (always 0)
             if line.split()[0] == "modSize":                                    #(line below this one) "modSize = (0.0, 0.0, 0.0)" -> (0.0, 0.0, 0.0), y<>z
-                self.modSize = tuple([float(" ".join(line.split()[2:]).split(", ")[0][1:]), float(" ".join(line.split()[2:]).split(", ")[2][0:-1]), float(" ".join(line.split()[2:]).split(", ")[1])])
+                # first = float(" ".join(line.split()[2:]).split(", ")[0][1:])
+                # second = float(" ".join(line.split()[2:]).split(", ")[2][0:-1])
+                # third = float(" ".join(line.split()[2:]).split(", ")[1])
+                # self.modSize = tuple([first, second, third])
+                # ###---STH 2017.0111
+                # looks like the file format changed?
+                # modSize = 0,0,0
+                self.modSize = zup_tuple(line)
             if line.split()[0] == "link":
                 self.linklist.append(link(line))                                #new entry in list of links with new link instance
             if line.split()[0] == "attN":
@@ -182,6 +189,8 @@ class part:
             if line.split()[0] == "sym":
                 self.symlist.append(sym(line))                                  #new entry in symmetrical parts list with new sym instance
             if line.split()[0] == "srfN":
+                # print("Should not fail here anymore...")
+                # print("Evaluating: '{0}'".format(line))
                 self.srfNlist.append(srfN(line))                                #"srfN = srfAttach,RCSTank1-2_4293083910" -> new entry in surface-attached-to list with new srfN instance
             if line.split()[0] == "cData":
                 self.tgt = line.split()[3][0:-1]
@@ -222,7 +231,7 @@ class attN:
 
     def set_data(self,line):
         self.loc = line.split(" ")[2].split(",")[0]                             #"attN = bottom,decoupler1-2_4293084002" -> "bottom" may need this info at some point
-        self.part = line.split(" ")[2].split(",")[1]                            #"attN = bottom,decoupler1-2_4293084002" -> "decoupler1-2_4293084002" 
+        self.part = line.split(" ")[2].split(",")[1]                            #"attN = bottom,decoupler1-2_4293084002" -> "decoupler1-2_4293084002"
         self.partNumber = int(line.split("_")[1])                               #"attN = bottom,decoupler1-2_4293084002" -> 4293084002
 
 
@@ -238,7 +247,7 @@ class sym:
     def set_data(self,line):
         self.part = line.split(" ")[2]                                          #"sym = RCSBlock_4293083644" -> "RCSBlock_4293083644"
         self.partNumber = int(line.split("_")[1])                               #"sym = RCSBlock_4293083644" -> 4293083644 also move/rotate/scale symmetrical parts maybe?
-        
+
 
 class srfN:
     """A srfN for a part for a ship lol"""
@@ -251,7 +260,15 @@ class srfN:
         self.set_data(self.line)
 
     def set_data(self,line):
-        self.type = line.split(" ")[2].split(",")[0]                            #"srfN = srfAttach,RCSTank1-2_4293083910" -> "srfAttach"
-        self.part = line.split(" ")[2].split(",")[1]                            #"srfN = srfAttach,RCSTank1-2_4293083910" -> "RCSTank1-4293083910"
-        self.partNumber = int(line.split("_")[1])                               #"srfN = srfAttach,RCSTank1-2_4293083910" -> 4293083910
+        base = line.split(" ")[2]
+        details = "_".join(base.split("_")[1:])
+        # print("Details are '{}'".format(details))
 
+        self.type = base.split(",")[0]                            #"srfN = srfAttach,RCSTank1-2_4293083910" -> "srfAttach"
+        self.part = base.split(",")[1]                            #"srfN = srfAttach,RCSTank1-2_4293083910" -> "RCSTank1-4293083910"
+        # print("Part name is '{}'".format(self.part))
+        self.partNumber = int(details.split(",")[0])              #"srfN = srfAttach,RCSTank1-2_4293083910" -> 4293083910
+
+        weird_matrix = [details.split(",")[2], details.split(",")[3], details.split(",")[4]]
+        mysterious_matrix = list(map(lambda x : x.split("|"), weird_matrix))
+        # print("Mysterious matrix is: {}".format(mysterious_matrix))

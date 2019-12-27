@@ -40,7 +40,7 @@ def import_craft(self, context, filepath):
         if area.type == 'VIEW_3D':
             area.spaces[0].viewport_shade = 'TEXTURED'
 
-    
+
     print("\n")
     print("         A          ")
     print("        / \\        ")
@@ -66,7 +66,7 @@ def import_craft(self, context, filepath):
     stage_grouper()
     #unselectable_fixer()
     print( "All done")
-    
+
     bpy.context.user_preferences.edit.use_global_undo = undo
     return {'FINISHED'}
 
@@ -85,7 +85,7 @@ def get_kspdir():
 def import_parts(filepath,partdir,right_scale,right_location):
 
     ksp = get_kspdir()
-    
+
     for obj in bpy.context.scene.objects:
         obj.select = False
 
@@ -93,7 +93,7 @@ def import_parts(filepath,partdir,right_scale,right_location):
 
     print(craft.ship + ' ready for takeoff\n')
     print(str(craft.num_parts()) + ' parts found...')
-    
+
     partslist = craft.partslist
     doneparts = {}                                                                                          # keep track of parts that have already been imported so I can save time
     doneobj = set(bpy.data.objects)                                                                         # know which objects have gone through the cleaning process
@@ -101,13 +101,14 @@ def import_parts(filepath,partdir,right_scale,right_location):
     #cursor_loc = get_cursor_location()
 
     #to_ground = partslist[0].pos[2]
-    
+
     for part in partslist:
         part.partName = part.partName.replace('.','_')
         if os.path.isfile(partdir[part.partName][0]):                                                      # make sure the part file exists so nothing crashes
             print("\n----------------------------------------------------\n")                               # to make console output easier to look at
             if part.partName not in doneparts:                                                              # if part has not been imported...
                 print("Importing "+part.partName+" as "+part.part)                                                               # ...say so on the console
+                print(partdir[part.partName][0])
                 bpy.ops.import_object.ksp_mu(filepath=partdir[part.partName][0])                               # call the importer
                 newpart = bpy.context.active_object                                                             # set the imported part object to active. from here on, part refers to the part data structure and object to the blender object
                 newpart.select = True
@@ -118,17 +119,17 @@ def import_parts(filepath,partdir,right_scale,right_location):
                     newpart.select = True
                     newpart.scale = right_scale[part.partName]
                     bpy.ops.object.transform_apply(location = False, rotation = False, scale = True)
-                    bpy.ops.object.select_all(action = 'DESELECT') 
+                    bpy.ops.object.select_all(action = 'DESELECT')
                     print("Scale corrected")
-                
+
                 #setup to make lod parts
                 #meme = bpy.data.meshes.new(part.partName+"_low")
                 #objobj = bpy.data.objects.new(part.partName+"_low",meme)
                 #objobj.location = newpart.location
                 #scn.objects.link(objobj)
-                
+
                 print("\n")
-                
+
                 # Set a bunch of properties
                 newpart["partName"] = part.partName
                 newpart["partClass"] = partdir[part.partName][1]
@@ -151,8 +152,8 @@ def import_parts(filepath,partdir,right_scale,right_location):
                 newpart["tgtpos"] = part.tgtpos
                 newpart["tgtrot"] = part.tgtrot
                 newpart["tgtdir"] = part.tgtdir
-                
-                
+
+
             else:                                                                                           # but if part has been imported...
                 hiddenlist = []                                                                                 # clunky workaround
                 for obj in bpy.data.objects:                                                                    # hidden objects cannot be modified (duplication is what I want to do)
@@ -168,7 +169,7 @@ def import_parts(filepath,partdir,right_scale,right_location):
                 print(oldpart)
                 bpy.ops.object.select_grouped(type = 'CHILDREN_RECURSIVE')                                      # select all children of the parent object (the empty), which deselects the parent
                 bpy.data.objects[doneparts[part.partName]].select = True                                        # so reselect the parent
-                
+
                 bpy.ops.object.duplicate_move_linked()                                                          # duplicate the whole family
                 copiedpart = oldpart.name + ".001"                                                             # the duplicate will be called something.001 always
                 bpy.ops.object.select_all(action = 'DESELECT')                                                  # deselect everything
@@ -185,27 +186,27 @@ def import_parts(filepath,partdir,right_scale,right_location):
         if part.partName in right_location:
             newpart.select = True
             bpy.ops.transform.translate(value=right_location[part.partName],constraint_axis=(False,False,False),constraint_orientation='LOCAL',mirror=False,proportional='DISABLED',proportional_edit_falloff='SMOOTH',proportional_size=1)
-            bpy.ops.object.select_all(action = 'DESELECT') 
+            bpy.ops.object.select_all(action = 'DESELECT')
             print("Location corrected")
-        
+
         if part.partName not in doneparts:                                                                  # if the part hasn't been imported before...
             doneparts[part.partName] = part.part                                                            # ...it has now
 
         objlist = set([obj for obj in bpy.data.objects if obj not in doneobj])                              # find all the newly added objects
-        
+
         doneobj = set(bpy.data.objects)                                                                     # done dealing with all the objects that are now in the scene (except for the ones I'm about to work with in objlist)
         emptysize = []
-                
+
         if part.partName == "strutConnector":
             add_strut(part,objlist)
-            
+
         elif part.partName == "fuelLine":
             add_fuelline(part,objlist)
-            
+
         elif part.partName == "launchClamp1":
             add_launchclamp(part,objlist)
-                    
-        else:    
+
+        else:
             for obj in objlist:                                                                                 # for all the unprocesses objects
                 print(obj.name)                                                                                     # let me know which one we're on
                 obj['ship'] = craft.ship
@@ -235,21 +236,21 @@ def import_parts(filepath,partdir,right_scale,right_location):
                             obj.data.uv_layers.active.name+="_fixed"
                             for uvvertex in obj.data.uv_layers.active.data:
                                 uvvertex.uv[1] = -uvvertex.uv[1] + 1
-                    
+
                     obj.select = True
                     bpy.ops.object.shade_smooth()
                     obj.data.use_auto_smooth = True
                     obj.data.auto_smooth_angle = .610865
                     bpy.ops.object.select_all(action = 'DESELECT')
-                    
+
                     if len(obj.data.polygons) == 0:                                                                     # and if it's one of them stupid fake meshes with no faces
                         obj.hide = True                                                                                 # gtfo
                         obj.hide_render = True
-                       
+
                     root = obj
                     meshrad = math.sqrt((obj.dimensions[0]/2)**2 + (obj.dimensions[1]/2)**2 + (obj.dimensions[2]/2)**2)  # find the radius of the parent Empty such that it encloses the object
                     emptysize.append(meshrad)
-                    
+
                 if "coll" in obj.name or "COL" in obj.name or "Col" in obj.name or "fair" in obj.name and 'KSP' not in obj.name:         # if it is named anything to do with collider, I'll have none of it
                     obj.hide = True                                                                                     # gtfo
                     obj.hide_render = True                                                                              # really gtfo (don't even render)
@@ -257,9 +258,9 @@ def import_parts(filepath,partdir,right_scale,right_location):
                     #bpy.ops.object.delete()                                                                            # I could just delete it
                     if obj.type != 'EMPTY':                                                                             # and if it is a mesh (the empties have already been hidden, so this is a double-tap on them)...
                         print(obj.name + " Hidden\n")                                                                       # ...let me know
-                
+
                 action_fixer(obj)
-                
+
 #        for obj in objlist:
 #            if "KSP" not in obj.name and obj.type == 'MESH':
 #                if obj.data.materials:
@@ -275,12 +276,12 @@ def import_parts(filepath,partdir,right_scale,right_location):
             bpy.data.objects[part.part].empty_draw_size = radius
         else:
             print(part.part + " not imported for some reason... let me know which part!")
-    
+
     bpy.ops.object.select_all(action = 'DESELECT')
-    print("\n----------------------------------------------------\n") 
+    print("\n----------------------------------------------------\n")
 
     return craft
-    
+
     #have craft and part classes imported from their own file, copy this structure
     #if not mu.read(filepath):
     #    bpy.context.user_preferences.edit.use_global_undo = undo
@@ -298,8 +299,8 @@ def import_parts(filepath,partdir,right_scale,right_location):
 
 
 def add_strut(part,objlist):
-    scn = bpy.context.scene   
-    
+    scn = bpy.context.scene
+
     root = bpy.data.objects[part.part]
     root.children[0].hide = True
     for child in root.children[0].children:
@@ -316,7 +317,7 @@ def add_strut(part,objlist):
             scn.objects.active = newstrut
             bpy.ops.object.make_single_user(type='SELECTED_OBJECTS', object=True, obdata=True, material=False, texture=False, animation=False)
             bpy.ops.object.select_all(action = 'DESELECT')
-     
+
     if newstrut.constraints:
         scn.objects.active = newstrut
         newstrut.constraints.clear()
@@ -325,29 +326,29 @@ def add_strut(part,objlist):
         const = newstrut.constraints.new("STRETCH_TO")
     const.target = target
     const.bulge = 0
-           
+
     anchor.delta_location = Vector(part.attPos)
     anchor.delta_rotation_quaternion = Quaternion(part.attRot)
     target.location = Vector(part.tgtpos)
     target.rotation_quaternion = Quaternion(part.tgtrot)
-    
+
     for obj in objlist:
         if obj.type == 'MESH':
-            scn.objects.active = obj 
+            scn.objects.active = obj
             if obj.data.materials:
                 material_fixer(obj,part)
-                
+
             bpy.ops.object.mode_set(mode='EDIT')                                                                # go into edit mode
             bpy.ops.mesh.remove_doubles(threshold = 0.0001)                                                     # remove double vertices
             bpy.ops.mesh.normals_make_consistent(inside = False)                                                # fix normals
             bpy.ops.object.mode_set(mode='OBJECT')                                                              # leave edit mode
-            
+
             obj.select = True
             bpy.ops.object.shade_smooth()
             obj.data.use_auto_smooth = True
             obj.data.auto_smooth_angle = .610865
             bpy.ops.object.select_all(action = 'DESELECT')
-            
+
         if obj.parent == None:
             obj.empty_draw_type = 'SPHERE'
             obj.empty_draw_size = .25
@@ -364,25 +365,25 @@ def add_strut(part,objlist):
     newstrut.data.vertices[5].co.y = strutlen
     newstrut.data.vertices[6].co.y = strutlen
     newstrut.data.vertices[7].co.y = strutlen
-    
+
     target.children[0].data.materials[0] = strutmat
-    
+
     gl0 = strutmat.node_tree.nodes['Glossy BSDF']
-    
+
     for link in strutmat.node_tree.links:
         if link.to_node == gl0:
             strutmat.node_tree.links.remove(link)
-    
+
     co0 = strutmat.node_tree.nodes.new('ShaderNodeRGB')
     co0.location = (800,150)
     strutmat.node_tree.nodes["RGB"].outputs[0].default_value = (0.3, 0.3, 0.3, 1)
     strutmat.node_tree.links.new(co0.outputs['Color'],gl0.inputs['Color'])
     gl0.inputs[1].default_value=.2
-    
-    
-def add_fuelline(part,objlist):     
+
+
+def add_fuelline(part,objlist):
     scn = bpy.context.scene
-    
+
     root = bpy.data.objects[part.part]
     root.rotation_quaternion = Quaternion(part.rotQ)
     print(root.rotation_quaternion)
@@ -427,7 +428,7 @@ def add_fuelline(part,objlist):
     #bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
     bpy.context.object.name = part.part[0:part.part.rfind('_')]+"Target"+part.part[part.part.rfind('_'):len(part.part)]
     anchor.empty_draw_type = 'SPHERE'
-    anchor.empty_draw_size = .25 
+    anchor.empty_draw_size = .25
     bpy.ops.object.select_all(action = 'DESELECT')
 
 
@@ -438,30 +439,30 @@ def add_fuelline(part,objlist):
     else:
         const = newfuelline.constraints.new("STRETCH_TO")
     const.target = target.children[1]
-    const.bulge = 0  
+    const.bulge = 0
 
     anchor.delta_location = Vector(part.attPos)
     anchor.rotation_quaternion = Quaternion(part.attRot)
     target.location = Vector(part.tgtpos)
     target.rotation_quaternion = Quaternion(part.tgtrot)
-    
+
     for obj in objlist:
         if obj.type == 'MESH':
-            scn.objects.active = obj 
+            scn.objects.active = obj
             if obj.data.materials:
                 material_fixer(obj,part)
-                
+
             bpy.ops.object.mode_set(mode='EDIT')                                                                # go into edit mode
             bpy.ops.mesh.remove_doubles(threshold = 0.0001)                                                     # remove double vertices
             bpy.ops.mesh.normals_make_consistent(inside = False)                                                # fix normals
             bpy.ops.object.mode_set(mode='OBJECT')                                                              # leave edit mode
-            
+
             obj.select = True
             bpy.ops.object.shade_smooth()
             obj.data.use_auto_smooth = True
             obj.data.auto_smooth_angle = .610865
             bpy.ops.object.select_all(action = 'DESELECT')
-            
+
         if obj.parent == None:
             obj.empty_draw_type = 'SPHERE'
             obj.empty_draw_size = .25
@@ -470,27 +471,27 @@ def add_fuelline(part,objlist):
             obj.hide_render = True
         if "Cap" in obj.name and obj.type == 'EMPTY':
             obj.hide = True
-    
+
     fuellen = (target.location - anchor.location).magnitude*10
     newfuelline.data.vertices[5].co.y = fuellen
     newfuelline.data.vertices[6].co.y = fuellen
     newfuelline.data.vertices[7].co.y = fuellen
     newfuelline.data.vertices[8].co.y = fuellen
     newfuelline.data.vertices[9].co.y = fuellen
-   
-    
+
+
     #newfuelline.parent.rotation_quaternion = Vector((1,0,0,-1))
     #newfuelline.parent.delta_rotation_quaternion = -Quaternion(part.attRot0)
     #newfuelline.parent.rotation_mode = 'XYZ'
     #newfuelline.parent.delta_rotation_euler = Vector((math.pi/2,.95*math.asin((target.location[2]-anchor.location[2])/((anchor.location-target.location).magnitude)),0.05))
     #newfuelline.parent.delta_rotation_euler = Vector((0,math.asin((target.location[2]-anchor.location[2])/((anchor.location-target.location).magnitude)),0))
-    
+
     #newfuelline.parent.delta_rotation_euler = Quaternion(part.attRot0).to_euler()
     #newfuelline.parent.rotation_mode = 'QUATERNION'
     #newfuelline.parent.delta_rotation_euler = Vector((0,0,math.asin((target.location[0]-anchor.location[0])/((target.location-anchor.location).length))))
 
-    
-def add_launchclamp(part,objlist):   
+
+def add_launchclamp(part,objlist):
     scn = bpy.context.scene
     root = bpy.data.objects[part.part]
 
@@ -522,7 +523,7 @@ def add_launchclamp(part,objlist):
             bpy.ops.object.select_all(action = 'DESELECT')
             scn.objects.active = ground
             ground.select = True
-            ground.delta_location = (0,.94,0) 
+            ground.delta_location = (0,.94,0)
             #   BROKEN WHEN USING SOMETHING BESIDES BLENDER UNITS
             #if not len(ground.constraints):
             #    const = ground.constraints.new("LIMIT_LOCATION")
@@ -544,20 +545,20 @@ def add_launchclamp(part,objlist):
             newgirder.select = True
             scn.objects.active = newgirder
             bpy.ops.object.make_single_user(type='SELECTED_OBJECTS', object=True, obdata=True, material=False, texture=False, animation=False)
-            
+
             bpy.ops.object.mode_set(mode='EDIT')                                                                # go into edit mode
             bpy.ops.mesh.remove_doubles(threshold = 0.0001)                                                     # remove double vertices
             bpy.ops.mesh.normals_make_consistent(inside = False)                                                # fix normals
             bpy.ops.mesh.select_all(action = 'DESELECT')
             bpy.ops.object.mode_set(mode='OBJECT')                                                              # leave edit mode
-            
+
             botverts = [0,3,4,8,9,10,11,12,13,14,15,25,26,28,29,31]
             topverts = [1,2,5,6,7,16,17,18,19,20,21,22,23,24,27,30]
             bpy.ops.object.select_all(action = 'DESELECT')
             scn.objects.active = newgirder
             newgirder.select = True
-            
-            
+
+
             for vert in botverts:
                 newgirder.data.vertices[vert].select = True
                 newgirder.data.vertices[vert].co.y = -mat.to_translation()[2]
@@ -570,10 +571,10 @@ def add_launchclamp(part,objlist):
                 bpy.ops.object.editmode_toggle()
                 bpy.ops.object.vertex_group_assign()
                 #bpy.ops.view3d.snap_cursor_to_selected()
-                
+
                 bpy.ops.mesh.select_all(action = 'DESELECT')
                 bpy.ops.object.editmode_toggle()
-            
+
                 for vert in topverts:
                     newgirder.data.vertices[vert].select = True
                 bpy.ops.object.vertex_group_add()
@@ -583,66 +584,66 @@ def add_launchclamp(part,objlist):
                 bpy.ops.object.vertex_group_assign()
                 bpy.ops.mesh.select_all(action = 'DESELECT')
                 bpy.ops.object.editmode_toggle()
-            
+
             if len(newgirder.modifiers) == 0:
                 bpy.ops.object.modifier_add(type='HOOK')
                 #bpy.ops.object.modifier_add(type='HOOK')
-            
+
             bpy.context.object.modifiers[0].name = "bottom_hook"
             bpy.context.object.modifiers[0].object = groundmesh
             bpy.context.object.modifiers[0].vertex_group = "bottom"
             #bpy.context.object.modifiers[0].force = 1
-            
+
             #bpy.context.object.modifiers[1].name = "top_hook"
             #bpy.context.object.modifiers[1].object = capmesh
             #bpy.context.object.modifiers[1].vertex_group = "top"
             #bpy.context.object.modifiers[1].force = 0
-            
-            bpy.ops.object.select_all(action = 'DESELECT')   
-            
-        
-        
+
+            bpy.ops.object.select_all(action = 'DESELECT')
+
+
+
     girder.rotation_mode = 'XYZ'
     mate = mat.to_euler()
     girder.rotation_euler = Vector((-mate[0],0,mate[1]))
-    
-    
+
+
     #bpy.ops.object.select_all(action = 'DESELECT')
     #newroot = root.children[0]
     #scn.objects.active = newroot
     #newroot.select = True
     #bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
     #bpy.ops.object.select_all(action = 'DESELECT')
-    
+
     #FIX EVENTUALLY... CONTROL EMPTY IS OFF SOMEWHERE RANDOM
-   
+
     #rootname = root.name
     #root.name = "oldroot"
     #newroot.name = rootname
     #root.parent = newroot
     #root.hide = True
-    
+
     for obj in objlist:
         if obj.type == 'MESH':
-            scn.objects.active = obj 
+            scn.objects.active = obj
             if obj.data.materials:
                 material_fixer(obj,part)
-              
+
             bpy.ops.object.mode_set(mode='EDIT')                                                                # go into edit mode
             bpy.ops.mesh.remove_doubles(threshold = 0.0001)                                                     # remove double vertices
             bpy.ops.mesh.normals_make_consistent(inside = False)                                                # fix normals
             bpy.ops.object.mode_set(mode='OBJECT')                                                              # leave edit mode
-            
+
             obj.select = True
             bpy.ops.object.shade_smooth()
             obj.data.use_auto_smooth = True
             obj.data.auto_smooth_angle = .610865
             bpy.ops.object.select_all(action = 'DESELECT')
-            
+
             if len(obj.data.polygons) == 0:
                 obj.hide = True
-                obj.hide_render = True  
-            
+                obj.hide_render = True
+
         if obj.type == 'EMPTY':
             if obj.parent == None:
                 obj.empty_draw_type = 'SPHERE'
@@ -656,55 +657,55 @@ def add_launchclamp(part,objlist):
             obj.hide_render = True
         if "Cap" in obj.name and obj.type == 'EMPTY':
             obj.hide = True
-        
+
         action_fixer(obj)
         obj.select = False
         scn.objects.active = None
-    
+
     bpy.ops.object.select_all(action = 'DESELECT')
-    
+
     #for vert in verts:
         #newgirder.data.vertices[vert].co.y = -mat.to_translation()[2]
-        
+
     #ground.delta_location = Vector((0,0,-1))
 
-    
+
 def material_fixer(obj,part):
-    
+
     #kill preexisting at some point
 
     scn = bpy.context.scene
     scn.objects.active = obj
     mat = obj.data.materials[0]
-    
+
     if "Material Output" in mat.node_tree.nodes:
         return
-    
+
     mat.name = part.partName+"_"+obj.name
-    
+
     tx0 = mat.node_tree.nodes.new('ShaderNodeTexCoord')
     im0 = mat.node_tree.nodes.new('ShaderNodeTexImage')
     ma0 = mat.node_tree.nodes.new('ShaderNodeMath')
     gl0 = mat.node_tree.nodes.new('ShaderNodeBsdfGlossy')
     om0 = mat.node_tree.nodes.new('ShaderNodeOutputMaterial')
-    
+
     location = [(550,250),(800,450),(1050,350),(1300,300),(1550,300),(800,150),(800,-150),(1300,0),(1800,300)]
-    
+
     tx0.location = location[0]
     mat.node_tree.links.new(tx0.outputs['UV'],im0.inputs['Vector'])
-    
-    
+
+
     ma0.location = location[2]
     mat.node_tree.links.new(ma0.outputs['Value'],gl0.inputs['Roughness'])
     ma0.operation = "DIVIDE"
     ma0.inputs[0].default_value = 1
-    
-    
+
+
     gl0.location = location[3]
     mat.node_tree.links.new(gl0.outputs['BSDF'],om0.inputs['Surface'])
-    
+
     om0.location = location[4]
-    
+
     im0.location = location[1]
     mat.node_tree.links.new(im0.outputs['Color'],gl0.inputs['Color'])
     mat.node_tree.links.new(im0.outputs['Color'],ma0.inputs[1])
@@ -714,8 +715,8 @@ def material_fixer(obj,part):
             texname = part.part+"_"+obj.name+"_tex"
             imgname = part.part+"_"+obj.name+"_img"
             possible_img = [image for image in bpy.data.images if imA.texture.name in image.name]
-            
-            if imA.texture.image:  
+
+            if imA.texture.image:
                 im0.image = imA.texture.image
                 im0.image.name = imgname
                 im0.image.use_alpha = False
@@ -725,13 +726,13 @@ def material_fixer(obj,part):
                 im0.image.use_alpha = False
             else:
                 print('Failed to find image texture')
-            
+
             possible_tex = [tex for tex in bpy.data.textures if im0.image.name in tex.name]
             if possible_tex:
                 imA.texture = possible_tex[-1]
             imA.texture.name = texname
             imA.texture.use_alpha = False
-            
+
         if node.label == "bumpMap":
             im1 = mat.node_tree.nodes.new('ShaderNodeTexImage')
             im1.location = location[5]
@@ -739,12 +740,12 @@ def material_fixer(obj,part):
             mat.node_tree.links.new(tx0.outputs['UV'],im1.inputs['Vector'])
             mat.node_tree.links.new(im1.outputs['Color'],om0.inputs['Displacement'])
             #may need to scale this down
-            
+
             imB = node.material.active_texture
             texname = part.part+"_"+obj.name+"_bump"
             imgname = part.part+"_"+obj.name+"_imgb"
             possible_img = [image for image in bpy.data.images if imB.name in image.name]
-            if imB.image:  
+            if imB.image:
                 im1.image = imB.image
                 im1.image.name = imgname
             if possible_img:
@@ -752,7 +753,7 @@ def material_fixer(obj,part):
                 im1.image.name = imgname
             else:
                 print('Failed to find bump texture')
-        
+
         if node.label == "emissive":
             im2 = mat.node_tree.nodes.new('ShaderNodeTexImage')
             im2.location = location[6]
@@ -762,19 +763,19 @@ def material_fixer(obj,part):
             as0 = mat.node_tree.nodes.new('ShaderNodeAddShader')
             as0.location = location[4]
             om0.location = location[8]
-            
+
             mat.node_tree.links.new(tx0.outputs['UV'],im2.inputs['Vector'])
             mat.node_tree.links.new(im2.outputs['Color'],em0.inputs['Strength'])
             mat.node_tree.links.new(im0.outputs['Color'],em0.inputs['Color'])
             mat.node_tree.links.new(em0.outputs['Emission'],as0.inputs[1])
             mat.node_tree.links.new(gl0.outputs['BSDF'],as0.inputs[0])
             mat.node_tree.links.new(as0.outputs['Shader'],om0.inputs['Surface'])
-            
+
             imE = node
             texname = part.part+"_"+obj.name+"_bump"
             imgname = part.part+"_"+obj.name+"_imgb"
             possible_img = [image for image in bpy.data.images if imE.texture.name in image.name]
-            if imE.texture.image:  
+            if imE.texture.image:
                 im2.image = imE.texture.image
                 im2.image.name = imgname
             if possible_img:
@@ -798,7 +799,7 @@ def fairing_fixer(partslist,partdir):
                             current.hide_render = False
                         for child in current.children:
                             queue.append(child)
-    
+
 def scale_fixer(craft,scale):
     scn = bpy.context.scene
     for part in craft.partslist:
@@ -809,8 +810,8 @@ def scale_fixer(craft,scale):
             obj_sca = obj.scale
             obj.location = (scale*obj_loc[0],scale*obj_loc[1],scale*obj_loc[2])
             obj.scale = (scale*obj_sca[0],scale*obj_sca[1],scale*obj_sca[2])
-        
-    bpy.ops.transform.resize()    
+
+    bpy.ops.transform.resize()
 
 def action_fixer(obj):
     scn = bpy.context.scene
@@ -825,7 +826,7 @@ def action_fixer(obj):
                 strip.use_reverse = True
     bpy.context.scene.frame_current=1
     bpy.context.scene.frame_current=0
-    
+
 def unselectable_fixer():
     scn = bpy.context.scene
     for obj in bpy.data.objects:
